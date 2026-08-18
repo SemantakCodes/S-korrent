@@ -1,0 +1,34 @@
+# Build outputs
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# IDE
+.vs/
+.idea/
+*.sln.docstates
+*.user
+*.suo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Test files
+*.torrent
+test_data.bin
+
+# Logs
+*.log
+
+# Rider
+.idea/
+*.sln.iml
