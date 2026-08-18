@@ -22,6 +22,7 @@
 using System.Buffers.Binary;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using BitTorrent.Core;
 
 namespace BitTorrent.Core;
@@ -250,4 +251,164 @@ public sealed class TrackerClient
         TrackerEvent.Completed => "completed",
         _                       => string.Empty,
     };
+}
+
+// =====================================================================================
+// UDP Tracker (BEP 15)
+// =====================================================================================
+// UDP tracker protocol uses a simple request/response over UDP:
+// 1. Connect request -> get connection_id
+// 2. Announce request with connection_id -> get peer list
+// =====================================================================================
+
+public sealed class UdpTrackerClient : IDisposable
+{
+    private readonly UdpClient _udp;
+    private readonly Random _random = new();
+    private readonly IPEndPoint _endpoint;
+    private readonly byte[] _connectionId = new byte[8];
+    private bool _connected;
+
+    public UdpTrackerClient(string announceUrl)
+    {
+        // Parse udp://host:port or udp://host:port/path
+        var uri = new Uri(announceUrl);
+        if (uri.Scheme != "udp")
+            throw new ArgumentException("URL must use udp:// scheme", nameof(announceUrl));
+        
+        var ip = Dns.GetHostAddresses(uri.Host).First(a => a.AddressFamily == AddressFamily.InterNetwork);
+        _endpoint = new IPEndPoint(ip, uri.Port);
+        _udp = new UdpClient { Client = { ReceiveTimeout = 15000 } };
+    }
+
+    public async Task<TrackerResponse> AnnounceAsync(
+        byte[] infoHash,
+        byte[] peerId,
+        ushort port,
+        long uploaded,
+        long downloaded,
+        long left,
+        TrackerEvent @event,
+        CancellationToken ct = default)
+    {
+        if (infoHash is null || infoHash.Length != 20)
+            throw new ArgumentException("info_hash must be 20 bytes.", nameof(infoHash));
+        if (peerId is null || peerId.Length != 20)
+            throw new ArgumentException("peer_id must be 20 bytes.", nameof(peerId));
+
+        // Step 1: Connect
+        if (!_connected)
+        {
+            await ConnectAsync(ct);
+            if (!_connected)
+                throw new InvalidOperationException("UDP tracker connect failed");
+        }
+
+        // Step 2: Announce
+        return await AnnounceInternalAsync(infoHash, peerId, port, uploaded, downloaded, left, @event, ct);
+    }
+
+    private async Task ConnectAsync(CancellationToken ct)
+    {
+        const uint ConnectAction = 0;
+        var transactionId = (uint)_random.Next();
+        
+        var request = new byte[16];
+        BinaryPrimitives.WriteInt64BigEndian(request, 0x41727101980); // Magic constant
+        BinaryPrimitives.WriteUInt32BigEndian(request.AsSpan(8), ConnectAction);
+        BinaryPrimitives.WriteUInt32BigEndian(request.AsSpan(12), transactionId);
+
+        await _udp.SendAsync(request, _endpoint);
+        
+        var receiveTask = _udp.ReceiveAsync();
+        var completed = await Task.WhenAny(receiveTask, Task.Delay(15000, ct));
+        if (completed != receiveTask) throw new TimeoutException("UDP connect timeout");
+        
+        var response = receiveTask.Result;
+        if (response.Buffer.Length < 16) throw new InvalidDataException("Invalid connect response");
+        
+        var action = BinaryPrimitives.ReadUInt32BigEndian(response.Buffer);
+        var respTransId = BinaryPrimitives.ReadUInt32BigEndian(response.Buffer.AsSpan(4));
+        if (action != 0 || respTransId != transactionId) throw new InvalidDataException("Invalid connect response");
+        
+        Buffer.BlockCopy(response.Buffer, 8, _connectionId, 0, 8);
+        _connected = true;
+    }
+
+    private async Task<TrackerResponse> AnnounceInternalAsync(
+        byte[] infoHash, byte[] peerId, ushort port,
+        long uploaded, long downloaded, long left, TrackerEvent @event,
+        CancellationToken ct)
+    {
+        const uint AnnounceAction = 1;
+        var transactionId = (uint)_random.Next();
+        
+        var request = new byte[98];
+        Buffer.BlockCopy(_connectionId, 0, request, 0, 8);
+        BinaryPrimitives.WriteUInt32BigEndian(request.AsSpan(8), AnnounceAction);
+        BinaryPrimitives.WriteUInt32BigEndian(request.AsSpan(12), transactionId);
+        Buffer.BlockCopy(infoHash, 0, request, 16, 20);
+        Buffer.BlockCopy(peerId, 0, request, 36, 20);
+        BinaryPrimitives.WriteInt64BigEndian(request.AsSpan(56), downloaded);
+        BinaryPrimitives.WriteInt64BigEndian(request.AsSpan(64), left);
+        BinaryPrimitives.WriteInt64BigEndian(request.AsSpan(72), uploaded);
+        BinaryPrimitives.WriteUInt32BigEndian(request.AsSpan(80), EventToInt(@event));
+        BinaryPrimitives.WriteUInt32BigEndian(request.AsSpan(84), 0); // IP = 0 (default)
+        BinaryPrimitives.WriteUInt32BigEndian(request.AsSpan(88), (uint)_random.Next()); // Key
+        BinaryPrimitives.WriteInt32BigEndian(request.AsSpan(92), -1); // num_want = -1 (default)
+        BinaryPrimitives.WriteUInt16BigEndian(request.AsSpan(96), port);
+
+        await _udp.SendAsync(request, _endpoint);
+        
+        var receiveTask = _udp.ReceiveAsync();
+        var completed = await Task.WhenAny(receiveTask, Task.Delay(15000, ct));
+        if (completed != receiveTask) throw new TimeoutException("UDP announce timeout");
+        
+        var response = receiveTask.Result;
+        if (response.Buffer.Length < 20) throw new InvalidDataException("Invalid announce response");
+        
+        var action = BinaryPrimitives.ReadUInt32BigEndian(response.Buffer);
+        var respTransId = BinaryPrimitives.ReadUInt32BigEndian(response.Buffer.AsSpan(4));
+        if (action != 1 || respTransId != transactionId) throw new InvalidDataException("Invalid announce response");
+        
+        var interval = BinaryPrimitives.ReadUInt32BigEndian(response.Buffer.AsSpan(8));
+        var leechers = BinaryPrimitives.ReadUInt32BigEndian(response.Buffer.AsSpan(12));
+        var seeders = BinaryPrimitives.ReadUInt32BigEndian(response.Buffer.AsSpan(16));
+        
+        var peers = ParseCompactPeersUdp(response.Buffer.AsSpan(20));
+        
+        return new TrackerResponse(
+            (int)interval,
+            0,
+            peers,
+            null,
+            (int)seeders,
+            (int)leechers);
+    }
+
+    private static uint EventToInt(TrackerEvent e) => e switch
+    {
+        TrackerEvent.Started => 2,
+        TrackerEvent.Stopped => 3,
+        TrackerEvent.Completed => 1,
+        _ => 0
+    };
+
+    private static IReadOnlyList<IPEndPoint> ParseCompactPeersUdp(ReadOnlySpan<byte> bytes)
+    {
+        var list = new List<IPEndPoint>();
+        for (int i = 0; i + 5 < bytes.Length; i += 6)
+        {
+            var slice = bytes.Slice(i, 6);
+            var ip = new IPAddress(slice.Slice(0, 4));
+            ushort port = BinaryPrimitives.ReadUInt16BigEndian(slice.Slice(4, 2));
+            list.Add(new IPEndPoint(ip, port));
+        }
+        return list;
+    }
+
+    public void Dispose()
+    {
+        _udp?.Dispose();
+    }
 }

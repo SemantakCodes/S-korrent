@@ -93,7 +93,7 @@ public sealed class DownloadEngine
         }
     }
 
-    private async Task<List<IPEndPoint>> GetPeersAsync(Torrent torrent, CancellationToken ct)
+    public async Task<List<IPEndPoint>> GetPeersAsync(Torrent torrent, CancellationToken ct)
     {
         var peers = new List<IPEndPoint>();
 
@@ -108,8 +108,6 @@ public sealed class DownloadEngine
         
         // Note: The Core library doesn't expose announce-list yet, so we only use primary
 
-        var tracker = new TrackerClient();
-        
         foreach (var url in announceUrls)
         {
             if (ct.IsCancellationRequested) break;
@@ -117,14 +115,31 @@ public sealed class DownloadEngine
             try
             {
                 Log($"Announcing to: {url}");
-                var response = await tracker.AnnounceAsync(
-                    url,
-                    torrent.InfoHash,
-                    _peerId,
-                    _listenPort,
-                    0, 0, torrent.TotalLength,
-                    TrackerEvent.Started,
-                    ct);
+                
+                TrackerResponse response;
+                if (url.Scheme == "udp")
+                {
+                    using var udpTracker = new UdpTrackerClient(url.ToString());
+                    response = await udpTracker.AnnounceAsync(
+                        torrent.InfoHash,
+                        _peerId,
+                        _listenPort,
+                        0, 0, torrent.TotalLength,
+                        TrackerEvent.Started,
+                        ct);
+                }
+                else
+                {
+                    var tracker = new TrackerClient();
+                    response = await tracker.AnnounceAsync(
+                        url,
+                        torrent.InfoHash,
+                        _peerId,
+                        _listenPort,
+                        0, 0, torrent.TotalLength,
+                        TrackerEvent.Started,
+                        ct);
+                }
 
                 Log($"Tracker response: interval={response.IntervalSeconds}s, peers={response.Peers.Count}, complete={response.Complete}, incomplete={response.Incomplete}");
                 

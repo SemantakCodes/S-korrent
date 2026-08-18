@@ -144,13 +144,12 @@ public sealed class MainViewModel : ViewModelBase
             new Random(42).NextBytes(testData);
             await File.WriteAllBytesAsync(testDataPath, testData);
 
-            // Use local tracker on a known port
-            const ushort trackerPort = 6969;
-            var trackerUrl = $"http://127.0.0.1:{trackerPort}/announce";
+            // Use working public UDP tracker
+            const string trackerUrl = "udp://tracker.opentrackr.org:6969";
             var torrentBytes = CreateTestTorrentBytes(testDataPath, "test_data.bin", trackerUrl);
             await File.WriteAllBytesAsync(path, torrentBytes);
 
-            MessageBox.Show($"Test torrent created at:\n{path}\n\nTest data file:\n{testDataPath}\n\nNote: Start the local tracker (🧪 Test Tracker button) before downloading.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Test torrent created at:\n{path}\n\nTest data file:\n{testDataPath}\n\nTracker: {trackerUrl} (public, working)\n\nYou can now download this test torrent.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             
             await AddTorrentAsync(path);
         }

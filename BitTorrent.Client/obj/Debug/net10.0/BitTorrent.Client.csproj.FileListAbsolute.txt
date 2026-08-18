@@ -16,3 +16,6 @@ D:\External Projects\code-control\BitTorrent.Client\obj\Debug\net10.0\refint\Bit
 D:\External Projects\code-control\BitTorrent.Client\obj\Debug\net10.0\BitTorrent.Client.pdb
 D:\External Projects\code-control\BitTorrent.Client\obj\Debug\net10.0\BitTorrent.Client.genruntimeconfig.cache
 D:\External Projects\code-control\BitTorrent.Client\obj\Debug\net10.0\ref\BitTorrent.Client.dll
+D:\External Projects\code-control\BitTorrent.Client\bin\Debug\net10.0\Spectre.Console.dll
+D:\External Projects\code-control\BitTorrent.Client\bin\Debug\net10.0\Spectre.Console.Ansi.dll
+D:\External Projects\code-control\BitTorrent.Client\obj\Debug\net10.0\BitTorrent.Client.sourcelink.json
