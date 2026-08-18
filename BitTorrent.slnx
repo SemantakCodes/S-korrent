@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="BitTorrent.Client/BitTorrent.Client.csproj" />
+  <Project Path="BitTorrent.Core/BitTorrent.Core.csproj" />
+</Solution>

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "8022htn6Dpw=",
+  "success": true,
+  "projectFilePath": "D:\\External Projects\\code-control\\BitTorrent.Client\\BitTorrent.Client.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\user\\.nuget\\packages\\spectre.console\\0.57.2\\spectre.console.0.57.2.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\spectre.console.ansi\\0.57.2\\spectre.console.ansi.0.57.2.nupkg.sha512"
+  ],
+  "logs": []
+}

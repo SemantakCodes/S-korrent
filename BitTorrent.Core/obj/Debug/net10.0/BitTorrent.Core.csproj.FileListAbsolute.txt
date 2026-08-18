@@ -1,0 +1,11 @@
+D:\External Projects\code-control\BitTorrent.Core\bin\Debug\net10.0\BitTorrent.Core.deps.json
+D:\External Projects\code-control\BitTorrent.Core\bin\Debug\net10.0\BitTorrent.Core.dll
+D:\External Projects\code-control\BitTorrent.Core\bin\Debug\net10.0\BitTorrent.Core.pdb
+D:\External Projects\code-control\BitTorrent.Core\obj\Debug\net10.0\BitTorrent.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\External Projects\code-control\BitTorrent.Core\obj\Debug\net10.0\BitTorrent.Core.AssemblyInfoInputs.cache
+D:\External Projects\code-control\BitTorrent.Core\obj\Debug\net10.0\BitTorrent.Core.AssemblyInfo.cs
+D:\External Projects\code-control\BitTorrent.Core\obj\Debug\net10.0\BitTorrent.Core.csproj.CoreCompileInputs.cache
+D:\External Projects\code-control\BitTorrent.Core\obj\Debug\net10.0\BitTorrent.Core.dll
+D:\External Projects\code-control\BitTorrent.Core\obj\Debug\net10.0\refint\BitTorrent.Core.dll
+D:\External Projects\code-control\BitTorrent.Core\obj\Debug\net10.0\BitTorrent.Core.pdb
+D:\External Projects\code-control\BitTorrent.Core\obj\Debug\net10.0\ref\BitTorrent.Core.dll

@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "BitTorrent.WPF/1.0.0": {
+        "dependencies": {
+          "BitTorrent.Core": "1.0.0"
+        },
+        "runtime": {
+          "BitTorrent.WPF.dll": {}
+        }
+      },
+      "BitTorrent.Core/1.0.0": {
+        "runtime": {
+          "BitTorrent.Core.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "BitTorrent.WPF/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BitTorrent.Core/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

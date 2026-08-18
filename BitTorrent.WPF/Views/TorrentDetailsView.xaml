@@ -1,0 +1,200 @@
+<UserControl x:Class="BitTorrent.WPF.Views.TorrentDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:BitTorrent.WPF.Views"
+             xmlns:vm="clr-namespace:BitTorrent.WPF.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="800"
+             d:DataContext="{d:DesignInstance Type=vm:TorrentViewModel, IsDesignTimeCreatable=False}">
+
+    <UserControl.Resources>
+        <local:BytesToStringConverter x:Key="BytesConverter"/>
+        <local:SpeedToStringConverter x:Key="SpeedConverter"/>
+        <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis"/>
+        <local:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Torrent Info Header -->
+        <Border Grid.Row="0" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" 
+                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" 
+                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Progress Ring -->
+                <Grid Grid.Column="0" Width="80" Height="80" VerticalAlignment="Center">
+                    <Ellipse Stroke="#E0E0E0" StrokeThickness="8"/>
+                    <Path Stroke="#007ACC" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathFigure StartPoint="40,0" IsClosed="False">
+                                    <ArcSegment Point="40,0" Size="36,36" IsLargeArc="{Binding OverallProgress, Converter={local:ProgressToLargeArcConverter}}" SweepDirection="Clockwise"/>
+                                </PathFigure>
+                            </PathGeometry>
+                        </Path.Data>
+                        <Path.RenderTransform>
+                            <RotateTransform Angle="-90" CenterX="40" CenterY="40"/>
+                        </Path.RenderTransform>
+                    </Path>
+                    <TextBlock Text="{Binding OverallProgress, StringFormat='{}{0:0}%'}" 
+                               FontSize="16" FontWeight="Bold" Foreground="#333"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- Info -->
+                <StackPanel Grid.Column="1" Margin="15,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding TorrentInfo.Name}" FontSize="18" FontWeight="SemiBold" Foreground="#333"/>
+                    <TextBlock Text="{Binding TorrentInfo.InfoHashHex}" FontSize="11" Foreground="#666" FontFamily="Consolas" Margin="0,4,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Size: " Foreground="#666"/>
+                        <TextBlock Text="{Binding TorrentInfo.TotalLength, Converter={StaticResource BytesConverter}}" FontWeight="Medium"/>
+                        <TextBlock Text="  •  " Foreground="#666"/>
+                        <TextBlock Text="Pieces: " Foreground="#666"/>
+                        <TextBlock Text="{Binding TorrentInfo.PieceCount}" FontWeight="Medium"/>
+                        <TextBlock Text="  •  " Foreground="#666"/>
+                        <TextBlock Text="Piece Length: " Foreground="#666"/>
+                        <TextBlock Text="{Binding TorrentInfo.PieceLength, Converter={StaticResource BytesConverter}}" FontWeight="Medium"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Controls -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <Button Content="Pause" Command="{Binding PauseCommand}" 
+                            Padding="15,6" Margin="5,0" Background="#FF9800" Foreground="White"
+                            Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVis}}"/>
+                    <Button Content="Resume" Command="{Binding ResumeCommand}"
+                            Padding="15,6" Margin="5,0" Background="#4CAF50" Foreground="White"
+                            Visibility="{Binding IsDownloading, Converter={StaticResource InverseBoolToVis}}"/>
+                    <Button Content="Stop" Command="{Binding StopCommand}"
+                            Padding="15,6" Margin="5,0" Background="#F44336" Foreground="White"
+                            Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVis}}"/>
+                    <Button Content="Remove" Command="{Binding RemoveCommand}"
+                            Padding="15,6" Margin="5,0" Background="#757575" Foreground="White"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Tab Control for Details -->
+        <TabControl Grid.Row="1" Margin="0,0,0,10">
+            <TabItem Header="Pieces">
+                <ListView ItemsSource="{Binding Pieces}" VirtualizingStackPanel.IsVirtualizing="True">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="#" DisplayMemberBinding="{Binding Index}" Width="50"/>
+                            <GridViewColumn Header="Progress" Width="200">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ProgressBar Value="{Binding Progress}" Maximum="1" Height="18"
+                                                     Foreground="{Binding IsVerified, Converter={StaticResource BoolToVis}, 
+                                                                         ConverterParameter=#4CAF50, 
+                                                                         FallbackValue=#2196F3}"
+                                                     Background="#E0E0E0"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Blocks" DisplayMemberBinding="{Binding BlocksReceived}" Width="80"/>
+                            <GridViewColumn Header="Total" DisplayMemberBinding="{Binding BlocksTotal}" Width="80"/>
+                            <GridViewColumn Header="Status" Width="100">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding IsVerified, Converter={StaticResource BoolToVis}, 
+                                                                   ConverterParameter=✓ Verified, 
+                                                                   FallbackValue={Binding IsDownloading, Converter={StaticResource BoolToVis}, 
+                                                                                           ConverterParameter=⬇ Downloading, 
+                                                                                           FallbackValue=⏳ Pending}}"
+                                                   Foreground="{Binding IsVerified, Converter={StaticResource BoolToVis}, 
+                                                                         ConverterParameter=#4CAF50, 
+                                                                         FallbackValue={Binding IsDownloading, Converter={StaticResource BoolToVis}, 
+                                                                                             ConverterParameter=#2196F3, 
+                                                                                             FallbackValue=#9E9E9E}}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </TabItem>
+
+            <TabItem Header="Peers">
+                <ListView ItemsSource="{Binding Peers}" VirtualizingStackPanel.IsVirtualizing="True">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Peer" DisplayMemberBinding="{Binding Endpoint}" Width="180"/>
+                            <GridViewColumn Header="Peer ID" DisplayMemberBinding="{Binding PeerId}" Width="200"/>
+                            <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="120"/>
+                            <GridViewColumn Header="⬇ Speed" DisplayMemberBinding="{Binding DownloadSpeed, Converter={StaticResource SpeedConverter}}" Width="100"/>
+                            <GridViewColumn Header="⬆ Speed" DisplayMemberBinding="{Binding UploadSpeed, Converter={StaticResource SpeedConverter}}" Width="100"/>
+                            <GridViewColumn Header="Pieces" DisplayMemberBinding="{Binding PiecesAvailable}" Width="80"/>
+                            <GridViewColumn Header="Choked" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding IsChoked, Converter={StaticResource BoolToVis}, 
+                                                                 ConverterParameter=Yes, FallbackValue=No}"
+                                                   Foreground="{Binding IsChoked, Converter={StaticResource BoolToVis}, 
+                                                                         ConverterParameter=#F44336, FallbackValue=#4CAF50}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="Interested" Width="80">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding IsInterested, Converter={StaticResource BoolToVis}, 
+                                                                 ConverterParameter=Yes, FallbackValue=No}"
+                                                   Foreground="{Binding IsInterested, Converter={StaticResource BoolToVis}, 
+                                                                         ConverterParameter=#4CAF50, FallbackValue=#9E9E9E}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </TabItem>
+
+            <TabItem Header="Files">
+                <ListView ItemsSource="{Binding TorrentInfo.Files}">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Name" DisplayMemberBinding="{Binding RelativePath}" Width="400"/>
+                            <GridViewColumn Header="Size" DisplayMemberBinding="{Binding Length, Converter={StaticResource BytesConverter}}" Width="120"/>
+                            <GridViewColumn Header="Offset" DisplayMemberBinding="{Binding Offset, Converter={StaticResource BytesConverter}}" Width="120"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </TabItem>
+        </TabControl>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="2" Height="28">
+            <StatusBarItem>
+                <TextBlock Text="{Binding Status}" FontSize="12"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock Text="{Binding ConnectedPeers, StringFormat='Peers: {0}'}" FontSize="12"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⬇ " FontSize="12"/>
+                    <TextBlock Text="{Binding DownloadSpeed, Converter={StaticResource SpeedConverter}}" FontSize="12"/>
+                    <TextBlock Text="   ⬆ " FontSize="12"/>
+                    <TextBlock Text="{Binding UploadSpeed, Converter={StaticResource SpeedConverter}}" FontSize="12"/>
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</UserControl>
