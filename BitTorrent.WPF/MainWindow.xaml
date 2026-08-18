@@ -65,6 +65,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
@@ -72,6 +73,8 @@
             <StackPanel Orientation="Horizontal">
                 <Button Content="🧪 Create Test Torrent" Style="{StaticResource ToolbarButton}" 
                         Command="{Binding CreateTestTorrentCommand}"/>
+                <Button Content="🌐 Start Test Tracker" Style="{StaticResource ToolbarButton}" 
+                        Command="{Binding StartTestTrackerCommand}"/>
                 <Button Content="➕ Add Torrent" Style="{StaticResource ToolbarButton}" 
                         Command="{Binding OpenTorrentFileCommand}"/>
                 <Button Content="📁 Set Download Folder" Style="{StaticResource ToolbarButton}" 
@@ -157,7 +160,7 @@
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid Height="20">
-                                                <ProgressBar Value="{Binding OverallProgress}" Maximum="100" Height="16"
+                                                <ProgressBar Value="{Binding OverallProgress, Mode=OneWay}" Maximum="100" Height="16"
                                                              Foreground="#2196F3" Background="#E0E0E0"/>
                                                 <TextBlock Text="{Binding OverallProgress, StringFormat='{}{0:0}%'}" 
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -210,5 +213,32 @@
                 </ContentControl>
             </Grid>
         </Grid>
+
+        <!-- Log Panel -->
+        <Border Grid.Row="2" Background="#1E1E1E" BorderBrush="#333" BorderThickness="0,1,0,0" 
+                MinHeight="150" MaxHeight="300" Visibility="{Binding Logs.Count, Converter={StaticResource BoolToVis}}">
+            <Grid Margin="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="Activity Log" Foreground="#CCC" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                    <Button Content="Clear" Style="{StaticResource ToolbarButton}" Padding="8,2" FontSize="11"
+                            Background="#555" Margin="10,0,0,0"
+                            Command="{Binding ClearLogsCommand}"/>
+                </StackPanel>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Logs}" VirtualizingPanel.IsVirtualizing="True">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="11" Foreground="#AAA" 
+                                           TextWrapping="Wrap" Margin="0,1"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

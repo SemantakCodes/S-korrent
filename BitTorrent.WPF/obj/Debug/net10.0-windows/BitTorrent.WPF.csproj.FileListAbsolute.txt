@@ -26,3 +26,4 @@ D:\External Projects\code-control\BitTorrent.WPF\obj\Debug\net10.0-windows\refin
 D:\External Projects\code-control\BitTorrent.WPF\obj\Debug\net10.0-windows\BitTorrent.WPF.pdb
 D:\External Projects\code-control\BitTorrent.WPF\obj\Debug\net10.0-windows\BitTorrent.WPF.genruntimeconfig.cache
 D:\External Projects\code-control\BitTorrent.WPF\obj\Debug\net10.0-windows\ref\BitTorrent.WPF.dll
+D:\External Projects\code-control\BitTorrent.WPF\obj\Debug\net10.0-windows\BitTorrent.WPF.sourcelink.json

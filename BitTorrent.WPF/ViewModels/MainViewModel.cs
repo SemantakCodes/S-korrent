@@ -19,6 +19,7 @@ public sealed class MainViewModel : ViewModelBase
     private string _downloadPath;
 
     public ObservableCollection<TorrentViewModel> Torrents { get; } = new();
+    public ObservableCollection<string> Logs { get; } = new();
 
     public TorrentViewModel? SelectedTorrent
     {
@@ -38,6 +39,8 @@ public sealed class MainViewModel : ViewModelBase
     public ICommand ResumeSelectedCommand { get; }
     public ICommand RemoveSelectedCommand { get; }
     public ICommand CreateTestTorrentCommand { get; }
+    public ICommand StartTestTrackerCommand { get; }
+    public ICommand ClearLogsCommand { get; }
 
     public MainViewModel(DownloadEngine engine, IFileDialogService dialogService)
     {
@@ -47,12 +50,22 @@ public sealed class MainViewModel : ViewModelBase
         
         Directory.CreateDirectory(_downloadPath);
 
+        // Wire up engine logging
+        _engine.LogMessage += msg => 
+        {
+            Application.Current?.Dispatcher.Invoke(() => Logs.Add(msg));
+            // Keep only last 500 logs
+            while (Logs.Count > 500) Logs.RemoveAt(0);
+        };
+
         OpenTorrentFileCommand = new RelayCommand(async _ => await OpenTorrentFileAsync());
         ChooseDownloadPathCommand = new RelayCommand(async _ => await ChooseDownloadPathAsync());
         PauseSelectedCommand = new RelayCommand(_ => PauseSelected(), _ => SelectedTorrent?.IsDownloading == true);
         ResumeSelectedCommand = new RelayCommand(async _ => await ResumeSelectedAsync(), _ => SelectedTorrent != null && SelectedTorrent.IsDownloading == false);
         RemoveSelectedCommand = new RelayCommand(_ => RemoveSelected(), _ => SelectedTorrent != null);
         CreateTestTorrentCommand = new RelayCommand(async _ => await CreateTestTorrentAsync());
+        StartTestTrackerCommand = new RelayCommand(async _ => await StartTestTrackerAsync());
+        ClearLogsCommand = new RelayCommand(_ => Logs.Clear());
     }
 
     private void RemoveSelected()
@@ -131,13 +144,14 @@ public sealed class MainViewModel : ViewModelBase
             new Random(42).NextBytes(testData);
             await File.WriteAllBytesAsync(testDataPath, testData);
 
-            // Create torrent using Core library
-            var torrentBytes = CreateTestTorrentBytes(testDataPath, "test_data.bin", "http://127.0.0.1:6969/announce");
+            // Use local tracker on a known port
+            const ushort trackerPort = 6969;
+            var trackerUrl = $"http://127.0.0.1:{trackerPort}/announce";
+            var torrentBytes = CreateTestTorrentBytes(testDataPath, "test_data.bin", trackerUrl);
             await File.WriteAllBytesAsync(path, torrentBytes);
 
-            MessageBox.Show($"Test torrent created at:\n{path}\n\nTest data file:\n{testDataPath}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Test torrent created at:\n{path}\n\nTest data file:\n{testDataPath}\n\nNote: Start the local tracker (🧪 Test Tracker button) before downloading.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             
-            // Auto-load it
             await AddTorrentAsync(path);
         }
         catch (Exception ex)
@@ -146,7 +160,20 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    private byte[] CreateTestTorrentBytes(string filePath, string fileName, string announceUrl)
+    private LocalTestTracker? _testTracker;
+
+    public async Task StartTestTrackerAsync()
+    {
+        if (_testTracker != null) return;
+        
+        const ushort port = 6969;
+        _testTracker = new LocalTestTracker(port);
+        _testTracker.Start();
+        
+        MessageBox.Show($"Test tracker started on http://127.0.0.1:{port}/announce\n\nYou can now download test torrents created with this app.", "Tracker Started", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    public static byte[] CreateTestTorrentBytes(string filePath, string fileName, string announceUrl, ushort listenPort = 6881)
     {
         var fileBytes = File.ReadAllBytes(filePath);
         var pieceLength = 16384;

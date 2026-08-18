@@ -14,7 +14,7 @@
         <local:SpeedToStringConverter x:Key="SpeedConverter"/>
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis"/>
-        <local:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
+        <local:ProgressToLargeArcConverter x:Key="ProgressToLargeArcConverter"/>
     </UserControl.Resources>
 
     <Grid Margin="10">
@@ -42,7 +42,7 @@
                         <Path.Data>
                             <PathGeometry>
                                 <PathFigure StartPoint="40,0" IsClosed="False">
-                                    <ArcSegment Point="40,0" Size="36,36" IsLargeArc="{Binding OverallProgress, Converter={local:ProgressToLargeArcConverter}}" SweepDirection="Clockwise"/>
+                                    <ArcSegment Point="40,0" Size="36,36" IsLargeArc="{Binding OverallProgress, Converter={StaticResource ProgressToLargeArcConverter}}" SweepDirection="Clockwise"/>
                                 </PathFigure>
                             </PathGeometry>
                         </Path.Data>
@@ -98,11 +98,18 @@
                             <GridViewColumn Header="Progress" Width="200">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ProgressBar Value="{Binding Progress}" Maximum="1" Height="18"
-                                                     Foreground="{Binding IsVerified, Converter={StaticResource BoolToVis}, 
-                                                                         ConverterParameter=#4CAF50, 
-                                                                         FallbackValue=#2196F3}"
-                                                     Background="#E0E0E0"/>
+                                        <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="1" Height="18" Background="#E0E0E0">
+                                            <ProgressBar.Style>
+                                                <Style TargetType="ProgressBar">
+                                                    <Setter Property="Foreground" Value="#2196F3"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsVerified}" Value="True">
+                                                            <Setter Property="Foreground" Value="#4CAF50"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ProgressBar.Style>
+                                        </ProgressBar>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -111,16 +118,24 @@
                             <GridViewColumn Header="Status" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding IsVerified, Converter={StaticResource BoolToVis}, 
-                                                                   ConverterParameter=✓ Verified, 
-                                                                   FallbackValue={Binding IsDownloading, Converter={StaticResource BoolToVis}, 
-                                                                                           ConverterParameter=⬇ Downloading, 
-                                                                                           FallbackValue=⏳ Pending}}"
-                                                   Foreground="{Binding IsVerified, Converter={StaticResource BoolToVis}, 
-                                                                         ConverterParameter=#4CAF50, 
-                                                                         FallbackValue={Binding IsDownloading, Converter={StaticResource BoolToVis}, 
-                                                                                             ConverterParameter=#2196F3, 
-                                                                                             FallbackValue=#9E9E9E}}"/>
+                                        <TextBlock>
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="⏳ Pending"/>
+                                                    <Setter Property="Foreground" Value="#9E9E9E"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsDownloading}" Value="True">
+                                                            <Setter Property="Text" Value="⬇ Downloading"/>
+                                                            <Setter Property="Foreground" Value="#2196F3"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsVerified}" Value="True">
+                                                            <Setter Property="Text" Value="✓ Verified"/>
+                                                            <Setter Property="Foreground" Value="#4CAF50"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

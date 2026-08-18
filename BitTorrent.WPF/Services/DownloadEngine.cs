@@ -14,11 +14,15 @@ public sealed class DownloadEngine
     private readonly ushort _listenPort;
     private readonly Random _random = new();
 
+    public event Action<string>? LogMessage;
+
     public DownloadEngine()
     {
         _peerId = GeneratePeerId();
         _listenPort = 6881;
     }
+
+    private void Log(string msg) => LogMessage?.Invoke($"[{DateTime.Now:HH:mm:ss}] {msg}");
 
     public async Task StartDownloadAsync(TorrentViewModel torrentVm, CancellationToken ct)
     {
@@ -34,16 +38,21 @@ public sealed class DownloadEngine
 
         using var fileStore = new FileStore(torrent, fullStorePath);
         torrentVm.Status = "Connecting to tracker...";
+        Log($"Starting download for: {torrentVm.TorrentInfo.Name}");
+        Log($"InfoHash: {torrentVm.TorrentInfo.InfoHashHex}");
+        Log($"Announce URL: {torrentVm.TorrentInfo.AnnounceUrl}");
 
         // Get peers from tracker
         var peers = await GetPeersAsync(torrent, ct);
         if (peers.Count == 0)
         {
             torrentVm.Status = "No peers found";
+            Log("ERROR: No peers returned from any tracker");
             return;
         }
 
         torrentVm.Status = $"Found {peers.Count} peers. Connecting...";
+        Log($"Got {peers.Count} peers from trackers");
 
         // Start peer connections and download
         var semaphore = new SemaphoreSlim(Environment.ProcessorCount * 2);
@@ -86,31 +95,54 @@ public sealed class DownloadEngine
 
     private async Task<List<IPEndPoint>> GetPeersAsync(Torrent torrent, CancellationToken ct)
     {
-        var tracker = new TrackerClient();
         var peers = new List<IPEndPoint>();
 
         if (torrent.AnnounceUrl == null)
+        {
+            Log("No announce URL in torrent");
             return peers;
-
-        try
-        {
-            var response = await tracker.AnnounceAsync(
-                torrent.AnnounceUrl,
-                torrent.InfoHash,
-                _peerId,
-                _listenPort,
-                0, 0, torrent.TotalLength,
-                TrackerEvent.Started,
-                ct);
-
-            peers.AddRange(response.Peers);
-        }
-        catch
-        {
-            // Tracker failed, try next announce if available
         }
 
-        return peers;
+        // Collect all announce URLs (primary + announce-list if present)
+        var announceUrls = new List<Uri> { torrent.AnnounceUrl };
+        
+        // Note: The Core library doesn't expose announce-list yet, so we only use primary
+
+        var tracker = new TrackerClient();
+        
+        foreach (var url in announceUrls)
+        {
+            if (ct.IsCancellationRequested) break;
+            
+            try
+            {
+                Log($"Announcing to: {url}");
+                var response = await tracker.AnnounceAsync(
+                    url,
+                    torrent.InfoHash,
+                    _peerId,
+                    _listenPort,
+                    0, 0, torrent.TotalLength,
+                    TrackerEvent.Started,
+                    ct);
+
+                Log($"Tracker response: interval={response.IntervalSeconds}s, peers={response.Peers.Count}, complete={response.Complete}, incomplete={response.Incomplete}");
+                
+                if (response.FailureReason != null)
+                {
+                    Log($"Tracker error: {response.FailureReason}");
+                    continue;
+                }
+
+                peers.AddRange(response.Peers);
+            }
+            catch (Exception ex)
+            {
+                Log($"Tracker announce failed for {url}: {ex.Message}");
+            }
+        }
+
+        return peers.Distinct().ToList();
     }
 
     private async Task ConnectAndDownloadPeerAsync(
@@ -124,8 +156,11 @@ public sealed class DownloadEngine
         
         try
         {
+            Log($"Connecting to peer: {endpoint}");
             await peer.ConnectAsync(ct);
+            Log($"TCP connected to: {endpoint}");
             await peer.PerformHandshakeAsync(ct);
+            Log($"Handshake OK with: {endpoint}");
             
             var peerVm = new PeerViewModel(endpoint.ToString(), 
                 peer.RemotePeerId != null ? Encoding.UTF8.GetString(peer.RemotePeerId) : null);
@@ -135,23 +170,27 @@ public sealed class DownloadEngine
             // Send interested
             await peer.SendInterestedAsync(ct);
             peerVm.IsInterested = true;
+            Log($"Sent Interested to: {endpoint}");
 
             // Wait for unchoke
             var unchoked = await WaitForUnchokeAsync(peer, ct);
             if (!unchoked)
             {
-                peerVm.Status = "Choked";
+                peerVm.Status = "Choked (timeout)";
+                Log($"Peer {endpoint} did not unchoke (timeout)");
                 return;
             }
 
             peerVm.Status = "Downloading";
             peerVm.IsChoked = false;
+            Log($"Peer {endpoint} unchoked us");
 
             // Download pieces
             await DownloadPiecesAsync(peer, torrent, fileStore, torrentVm, peerVm, ct);
         }
         catch (Exception ex)
         {
+            Log($"Peer {endpoint} error: {ex.Message}");
             var peerVm = new PeerViewModel(endpoint.ToString()) { Status = $"Error: {ex.Message}" };
             torrentVm.UpdatePeer(peerVm);
         }
