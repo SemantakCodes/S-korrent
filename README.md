@@ -1,10 +1,10 @@
-# BitTorrent Client
+# Skorrent
 
 A BitTorrent v1 client library and WPF desktop application written in C#.
 
 ## Features
 
-- **Core Library** (`BitTorrent.Core`) - Full BitTorrent v1 protocol implementation:
+- **Core Library** (`Skorrent.Core`) - Full BitTorrent v1 protocol implementation:
   - BEncoding codec (canonical encoding/decoding)
   - Torrent file parsing (single/multi-file, piece hashes, infohash)
   - Peer wire protocol (handshake, choke/unchoke, piece/block requests)
@@ -12,31 +12,31 @@ A BitTorrent v1 client library and WPF desktop application written in C#.
   - File storage (piece/block read/write, SHA-1 verification)
   - Percent encoding (RFC 3986)
 
-- **WPF Desktop App** (`BitTorrent.WPF`) - Modern GUI:
+- **WPF Desktop App** (`Skorrent`) - Modern GUI:
   - Torrent list with progress tracking
   - Real-time piece/peer views
   - Activity log with diagnostics
   - Test torrent generator with working public tracker
 
-- **Console App** (`BitTorrent.Client`) - Self-test and torrent inspection
+- **Console App** (`Skorrent.Client`) - Self-test and torrent inspection
 
 ## Quick Start
 
 ```powershell
 # Run WPF desktop app
-dotnet run --project BitTorrent.WPF
+dotnet run --project Skorrent.WPF
 
 # Run console self-test
-dotnet run --project BitTorrent.Client
+dotnet run --project Skorrent.Client
 
 # Inspect a torrent file
-dotnet run --project BitTorrent.Client -- path/to/file.torrent
+dotnet run --project Skorrent.Client -- path/to/file.torrent
 ```
 
 ## Building
 
 ```powershell
-dotnet build BitTorrent.slnx
+dotnet build Skorrent.slnx
 ```
 
 Requires .NET 10 SDK.
@@ -44,27 +44,27 @@ Requires .NET 10 SDK.
 ## Project Structure
 
 ```
-BitTorrent.slnx
-├── BitTorrent.Core/           # Class library (core protocol)
-│   ├── BEncoding.cs           # BEncoding codec
-│   ├── FileStore.cs           # Piece/block storage
-│   ├── Peer.cs                # Peer wire protocol
-│   ├── PercentEncoding.cs     # URL encoding
-│   ├── Torrent.cs             # Torrent parsing
-│   └── Tracker.cs             # HTTP + UDP trackers
-├── BitTorrent.Client/         # Console app
-│   └── Program.cs             # Self-test + torrent inspector
-└── BitTorrent.WPF/            # WPF desktop app
-    ├── ViewModels/            # MVVM view models
-    ├── Views/                 # XAML views + converters
-    ├── Services/              # DownloadEngine, FileDialogService
-    └── Models/                # TorrentInfo wrapper
+Skorrent.slnx
+├── Skorrent.Core/           # Class library (core protocol)
+│   ├── BEncoding.cs         # BEncoding codec
+│   ├── FileStore.cs         # Piece/block storage
+│   ├── Peer.cs              # Peer wire protocol
+│   ├── PercentEncoding.cs   # URL encoding
+│   ├── Torrent.cs           # Torrent parsing
+│   └── Tracker.cs           # HTTP + UDP trackers
+├── Skorrent.Client/         # Console app
+│   └── Program.cs           # Self-test + torrent inspector
+└── Skorrent.WPF/            # WPF desktop app
+    ├── ViewModels/          # MVVM view models
+    ├── Views/               # XAML views + converters
+    ├── Services/            # DownloadEngine, FileDialogService
+    └── Models/              # TorrentInfo wrapper
 ```
 
 ## Usage
 
 1. **WPF App**: Click "➕ Add Torrent" to load a `.torrent` file, or "🧪 Create Test Torrent" to generate one with a working public UDP tracker.
-2. **Console**: `dotnet run --project BitTorrent.Client -- file.torrent` prints torrent metadata.
+2. **Console**: `dotnet run --project Skorrent.Client -- file.torrent` prints torrent metadata.
 
 ## Supported Protocols
 

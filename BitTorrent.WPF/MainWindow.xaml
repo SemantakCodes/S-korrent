@@ -8,7 +8,7 @@
         xmlns:vm="clr-namespace:BitTorrent.WPF.ViewModels"
         xmlns:converters="clr-namespace:BitTorrent.WPF.Views"
         mc:Ignorable="d"
-        Title="BitTorrent Client" Height="720" Width="1200"
+        Title="Skorrent" Height="720" Width="1200"
         WindowStartupLocation="CenterScreen"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel, IsDesignTimeCreatable=False}">
 
