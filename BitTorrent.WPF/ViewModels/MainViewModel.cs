@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -50,11 +50,11 @@ public sealed class MainViewModel : ViewModelBase
         
         Directory.CreateDirectory(_downloadPath);
 
-        // Wire up engine logging
+        
         _engine.LogMessage += msg => 
         {
             Application.Current?.Dispatcher.Invoke(() => Logs.Add(msg));
-            // Keep only last 500 logs
+            
             while (Logs.Count > 500) Logs.RemoveAt(0);
         };
 
@@ -138,13 +138,13 @@ public sealed class MainViewModel : ViewModelBase
             var path = _dialogService.ShowSaveFileDialog("Save Test Torrent", "Torrent files (*.torrent)|*.torrent", "test.torrent");
             if (string.IsNullOrEmpty(path)) return;
 
-            // Create test data file
+            
             var testDataPath = Path.Combine(Path.GetDirectoryName(path)!, "test_data.bin");
-            var testData = new byte[1024 * 1024]; // 1 MB
+            var testData = new byte[1024 * 1024]; 
             new Random(42).NextBytes(testData);
             await File.WriteAllBytesAsync(testDataPath, testData);
 
-            // Use working public UDP tracker
+            
             const string trackerUrl = "udp://tracker.opentrackr.org:6969";
             var torrentBytes = CreateTestTorrentBytes(testDataPath, "test_data.bin", trackerUrl);
             await File.WriteAllBytesAsync(path, torrentBytes);

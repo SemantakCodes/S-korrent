@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using BitTorrent.WPF.ViewModels;
 
 namespace BitTorrent.WPF.ViewModels;
@@ -37,7 +37,7 @@ public sealed class PieceViewModel : ViewModelBase
         Index = index;
         _blocksTotal = (pieceLength + blockSize - 1) / blockSize;
         
-        // Last piece may have fewer blocks
+        
         if (index == parent.TorrentInfo.PieceCount - 1)
         {
             long lastPieceSize = parent.TorrentInfo.TotalLength - (long)index * pieceLength;

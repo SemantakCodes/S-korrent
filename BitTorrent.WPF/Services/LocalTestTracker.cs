@@ -1,4 +1,4 @@
-using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -9,9 +9,7 @@ using BitTorrent.Core;
 
 namespace BitTorrent.WPF.Services;
 
-/// <summary>
-/// Simple HTTP tracker for local testing. Responds to announce requests with the local peer.
-/// </summary>
+
 public sealed class LocalTestTracker : IDisposable
 {
     private readonly HttpListener _listener;
@@ -44,7 +42,7 @@ public sealed class LocalTestTracker : IDisposable
             }
             catch (HttpListenerException) when (_disposed) { break; }
             catch (ObjectDisposedException) when (_disposed) { break; }
-            catch { /* ignore */ }
+            catch {  }
         }
     }
 
@@ -77,7 +75,7 @@ public sealed class LocalTestTracker : IDisposable
                 return;
             }
 
-            // Decode info_hash (percent-encoded)
+            
             var infoHash = PercentEncoding.Decode(infoHashParam);
             if (infoHash.Length != 20)
             {
@@ -101,7 +99,7 @@ public sealed class LocalTestTracker : IDisposable
                     _torrents[infoHashHex] = peers;
                 }
 
-                // Update or add peer
+                
                 var existing = peers.FirstOrDefault(x => x.PeerId.SequenceEqual(peerId));
                 if (existing != null)
                 {
@@ -120,16 +118,16 @@ public sealed class LocalTestTracker : IDisposable
                     });
                 }
 
-                // Clean stale peers (> 5 min)
+                
                 peers.RemoveAll(x => DateTime.UtcNow - x.LastSeen > TimeSpan.FromMinutes(5));
 
-                // Build response
+                
                 var responsePeers = peers
                     .Where(x => !x.Endpoint.Equals(peerEndpoint))
                     .Select(x => x.Endpoint)
                     .ToList();
 
-                // Return compact peer list (6 bytes per peer: 4 IP + 2 port)
+                
                 var peerBytes = new List<byte>();
                 foreach (var ep in responsePeers)
                 {
@@ -143,7 +141,7 @@ public sealed class LocalTestTracker : IDisposable
                     }
                 }
 
-                // Build bencoded response: { "interval": i, "peers": <compact binary> }
+                
                 var responseDict = new BEncodedDictionary(new Dictionary<BEncodedString, BEncodedValue>
                 {
                     [new BEncodedString(Encoding.UTF8.GetBytes("interval"))] = new BEncodedInteger(1800),
@@ -207,7 +205,7 @@ public sealed class LocalTestTracker : IDisposable
     }
 }
 
-// PercentEncoding helper for local use (copied from Core to avoid circular dependency)
+
 file static class PercentEncoding
 {
     public static byte[] Decode(string encoded)
@@ -238,4 +236,4 @@ file static class PercentEncoding
     }
 }
 
-// Use BEncodedString directly from Core
+

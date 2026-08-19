@@ -22,9 +22,7 @@ await RunSelfTestAsync();
 Console.WriteLine(failures == 0 ? "ALL TESTS PASSED" : $"{failures} TEST(S) FAILED");
 return failures == 0 ? 0 : 1;
 
-// -----------------------------------------------------------------------------
-// Torrent inspection mode
-// -----------------------------------------------------------------------------
+
 void PrintTorrentInfo(string path)
 {
     var torrent = Torrent.LoadFromFile(path);
@@ -42,15 +40,13 @@ void PrintTorrentInfo(string path)
         Console.WriteLine($"  {f.Length,14:N0}  {f.RelativePath}");
 }
 
-// -----------------------------------------------------------------------------
-// Self-test mode (exercises every component)
-// -----------------------------------------------------------------------------
+
 async Task RunSelfTestAsync()
 {
     Console.WriteLine("== BitTorrent.Core self-test ==");
     Console.WriteLine();
 
-    // ---- 1. BEncoding round-trip ----
+    
     var dict = new BEncodedDictionary(new Dictionary<BEncodedString, BEncodedValue>
     {
         [new BEncodedString(Encoding.UTF8.GetBytes("cow"))] = new BEncodedString(Encoding.UTF8.GetBytes("moo")),
@@ -64,11 +60,11 @@ async Task RunSelfTestAsync()
     var dec = BEncoding.Decode(BEncoding.Encode(dict));
     Check("BEncode round-trip", dec is BEncodedDictionary dd && dd["cow"] is BEncodedString cs && cs.AsText() == "moo");
 
-    // ---- 2. PercentEncoding ----
+    
     Check("PercentEncoding lowercase hex",
         PercentEncoding.Encode(new byte[] { (byte)'a', 0xE4, (byte)'~', 0xFF }) == "a%e4~%ff");
 
-    // ---- 3. Torrent load + infohash + file store ----
+    
     byte[] payloadBytes = Encoding.UTF8.GetBytes("hello bit torrent world, this is a payload piece for testing.");
     byte[] piecesBlob = new byte[20];
     Buffer.BlockCopy(SHA1.HashData(payloadBytes), 0, piecesBlob, 0, 20);
@@ -108,7 +104,7 @@ async Task RunSelfTestAsync()
         Directory.Delete(dest, true);
     }
 
-    // ---- 4. Peer handshake over a local TCP loopback ----
+    
     byte[] peerId = Encoding.UTF8.GetBytes("ABCDEFGHIJKLMNOPQRST");
     byte[] ih = new byte[20];
     new Random(1).NextBytes(ih);
@@ -144,7 +140,7 @@ async Task RunSelfTestAsync()
     server.Stop();
     Check("Peer handshake exchange", protoOk);
 
-    // ---- 5. Tracker announce against a local HTTP server ----
+    
     var tracker = new TrackerClient();
     var responder = Task.Run(async () =>
     {
@@ -171,3 +167,4 @@ async Task RunSelfTestAsync()
 
     Console.WriteLine();
 }
+

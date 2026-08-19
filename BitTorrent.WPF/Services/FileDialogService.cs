@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using Microsoft.Win32;
 using System.Windows;
 
@@ -40,7 +40,7 @@ public sealed class FileDialogService : IFileDialogService
 
     public string? ShowFolderBrowserDialog(string title, string initialPath)
     {
-        // Use SaveFileDialog as folder picker workaround
+        
         var dialog = new SaveFileDialog
         {
             Title = title,

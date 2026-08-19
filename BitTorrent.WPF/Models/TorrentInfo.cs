@@ -1,4 +1,4 @@
-using BitTorrent.Core;
+﻿using BitTorrent.Core;
 
 namespace BitTorrent.WPF.Models;
 

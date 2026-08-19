@@ -1,25 +1,5 @@
-// =====================================================================================
-// Peer.cs
-// =====================================================================================
-// One Peer's TCP connection to a single remote BitTorrent peer.
-//
-// The wire protocol starts with a 68-byte HANDSHAKE:
-//
-//   |<-- 1 --->|<-- 19 ---->|<-- 8 --->|<-- 20 --->|<-- 20 --->|
-//     \x13        "BitTorrent   reserved       infohash           peer-id
-//                 protocol"
-//
-// After the handshake, all messages have the form:
-//
-//   <4-byte length (big-endian)><1-byte id><payload>
-//
-// `length` is the byte length of the payload only — the id byte is NOT counted.
-// Choke / Unchoke / Interested / NotInterested messages have length 1 (no payload).
-// Bitfield has length 1 + (N/8) bytes. Piece messages include an indexed block.
-// The KeepAlive message is the special case where length == 0 and there's no id byte.
-//
-// Spec: https://www.bittorrent.org/beps/bep_0003.html
-// =====================================================================================
+﻿
+
 
 using System.Buffers.Binary;
 using System.Net;
@@ -27,11 +7,7 @@ using System.Net.Sockets;
 
 namespace BitTorrent.Core;
 
-/// <summary>
-/// Wire-protocol message IDs. The spec uses a single byte after the length prefix.
-/// We expose them as enum constants so the rest of the client can use switch
-/// expressions instead of magic numbers.
-/// </summary>
+
 public enum PeerMessageId : byte
 {
     Choke         = 0,
@@ -45,84 +21,79 @@ public enum PeerMessageId : byte
     Cancel        = 8,
 }
 
-/// <summary>
-/// Lightweight incoming-message carrier. For static payloads (Choke, Unchoke,
-/// Interested, NotInterested) the data array is empty. Bitfield wraps a byte[].
-/// Piece wraps `(index, begin, block)` tuples. Request/Cancel wrap the request
-/// descriptor `(index, begin, length)`.
-/// </summary>
+
 public sealed record PeerMessage(PeerMessageId Id, byte[] Data);
 
 public sealed class Peer : IAsyncDisposable
 {
-    // -------------------------------------------------------------------------
-    // Constants from the BitTorrent v1 spec.
-    // -------------------------------------------------------------------------
+    
+    
+    
 
     private static readonly byte[] ProtocolIdentifier =
     {
-        (byte)19,                                     // string length
+        (byte)19,                                     
         (byte)'B',(byte)'i',(byte)'t',(byte)'T',(byte)'o',(byte)'r',(byte)'r',(byte)'e',
         (byte)'n',(byte)'t',(byte)' ',(byte)'p',(byte)'r',(byte)'o',(byte)'t',(byte)'o',(byte)'c',(byte)'o',(byte)'l'
     };
 
-    public const int HandshakeLength = 68;            // pstrlen(1) + pstr(19) + reserved(8) + info-hash(20) + peer-id(20)
+    public const int HandshakeLength = 68;            
 
-    public const int DefaultBlockSize = 16 * 1024;    // 16 KiB request block
+    public const int DefaultBlockSize = 16 * 1024;    
 
-    public const uint ProtocolBase = 0xFEEDBEEFu;    // BEP 10 extension protocol placeholder (unused here)
+    public const uint ProtocolBase = 0xFEEDBEEFu;    
 
-    // -------------------------------------------------------------------------
-    // Public surface
-    // -------------------------------------------------------------------------
+    
+    
+    
 
-    /// <summary>The remote peer's address, used both for connection and logging.</summary>
+    
     public IPEndPoint EndPoint { get; }
 
-    /// <summary>Our own peer ID (20 bytes). We need it to put into the handshake.</summary>
+    
     public byte[] PeerId { get; }
 
-    /// <summary>The infohash that the remote peer must report to be a valid match.</summary>
+    
     public byte[] InfoHash { get; }
 
-    /// <summary>True after both directions of the handshake have completed successfully.</summary>
+    
     public bool HandshakeCompleted { get; private set; }
 
-    /// <summary>True if the LOCAL client has been choked (cannot request) by the remote.
-    /// Starts TRUE; we flip to false when we receive an Unchoke message.</summary>
+    
+    
     public bool IsChokedRemote { get; private set; } = true;
 
-    /// <summary>True if the LOCAL client is choking the remote (will not respond to their requests).
-    /// Starts TRUE; we flip to false when we send Unchoke.</summary>
+    
+    
     public bool IsChokingLocal { get; private set; } = true;
 
-    /// <summary>True if the LOCAL client has signalled Interest.</summary>
+    
     public bool IsInterestingLocal { get; private set; }
 
-    /// <summary>True if the REMOTE has signalled Interest.</summary>
+    
     public bool IsInterestedRemote { get; private set; }
 
-    /// <summary>Optional remote peer ID for diagnostics. Available after handshake.</summary>
+    
     public byte[]? RemotePeerId { get; private set; }
 
-    /// <summary>Bitfield of pieces the remote peer says it has. Null until received.</summary>
+    
     public bool[]? RemoteBitfield { get; private set; }
 
-    /// <summary>Piece count, needed to interpret the bitfield payload. Set by the
-    /// application AFTER loading the Torrent and BEFORE the bitfield arrives.</summary>
+    
+    
     public int PieceCount { get; set; }
 
     private readonly TcpClient _client;
     private NetworkStream? _stream;
-    private readonly SemaphoreSlim _writeLock = new(1, 1); // NetworkStream isn't thread-safe for concurrent writes.
+    private readonly SemaphoreSlim _writeLock = new(1, 1); 
 
-    // -------------------------------------------------------------------------
-    // Construction
-    // -------------------------------------------------------------------------
+    
+    
+    
 
-    /// <summary>Connect asynchronously to the supplied peer. The handshake is not
-    /// performed yet; callers must invoke <see cref="PerformHandshakeAsync"/>
-    /// before exchanging any other messages.</summary>
+    
+    
+    
     public Peer(IPEndPoint endPoint, byte[] infoHash, byte[] peerId)
     {
         EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
@@ -131,30 +102,30 @@ public sealed class Peer : IAsyncDisposable
         if (infoHash.Length != 20) throw new ArgumentException("infoHash must be 20 bytes.", nameof(infoHash));
         if (peerId.Length   != 20) throw new ArgumentException("peerId must be 20 bytes.",   nameof(peerId));
 
-        _client = new TcpClient { NoDelay = true }; // Nagle off — small messages.
+        _client = new TcpClient { NoDelay = true }; 
     }
 
-    // -------------------------------------------------------------------------
-    // Connection lifecycle
-    // -------------------------------------------------------------------------
+    
+    
+    
 
-    /// <summary>Open the underlying TCP connection to the remote peer.</summary>
+    
     public async Task ConnectAsync(CancellationToken ct = default)
     {
         await _client.ConnectAsync(EndPoint.Address, EndPoint.Port, ct).ConfigureAwait(false);
         _stream = _client.GetStream();
     }
 
-    /// <summary>
-    /// Execute the 68-byte handshake in both directions. After this returns,
-    /// <see cref="HandshakeCompleted"/> is true and we are ready to exchange
-    /// BitTorrent wire-protocol messages.
-    /// </summary>
+    
+    
+    
+    
+    
     public async Task PerformHandshakeAsync(CancellationToken ct = default)
     {
         if (_stream is null) throw new InvalidOperationException("Call ConnectAsync first.");
 
-        // ---- Transmit our handshake. ----
+        
         var outBuf = BuildHandshakeBytes(PeerId, InfoHash);
         await _writeLock.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -163,20 +134,20 @@ public sealed class Peer : IAsyncDisposable
         }
         finally { _writeLock.Release(); }
 
-        // ---- Receive the remote handshake. ----
+        
         var inBuf = new byte[HandshakeLength];
         await ReadExactlyAsync(_stream, inBuf, 0, HandshakeLength, ct).ConfigureAwait(false);
 
-        // ---- Validate. ----
-        // First byte is the protocol-string length which must equal the length
-        // of our identifier; second 19 bytes must match exactly.
+        
+        
+        
         if (!inBuf.AsSpan(0, ProtocolIdentifier.Length).SequenceEqual(ProtocolIdentifier))
             throw new InvalidDataException("Peer protocol identifier mismatch.");
-        // The 8 reserved bytes are unused in v1; BEP 10 extension protocol sets
-        // some of them but we don't implement extensions in this v1.0 client.
-        // Skip check; just ignore them.
+        
+        
+        
 
-        // Remote infohash must equal ours.
+        
         if (!inBuf.AsSpan(28, 20).SequenceEqual(InfoHash))
             throw new InvalidDataException("Peer announced a different infohash.");
 
@@ -186,11 +157,11 @@ public sealed class Peer : IAsyncDisposable
         HandshakeCompleted = true;
     }
 
-    // -------------------------------------------------------------------------
-    // Byte-level send/receive
-    // -------------------------------------------------------------------------
+    
+    
+    
 
-    /// <summary>Send a fixed-length message with the given ID and payload.</summary>
+    
     public async Task SendMessageAsync(PeerMessageId id, byte[]? payload = null,
                                        CancellationToken ct = default)
     {
@@ -200,9 +171,9 @@ public sealed class Peer : IAsyncDisposable
         if (len + 1 > int.MaxValue)
             throw new ArgumentException("Message payload too large.");
 
-        // 4-byte big-endian length followed by 1-byte id and the payload.
+        
         var header = new byte[5];
-        BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(), len + 1); // +1 accounts for the id byte.
+        BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(), len + 1); 
         header[4] = (byte)id;
 
         await _writeLock.WaitAsync(ct).ConfigureAwait(false);
@@ -215,57 +186,57 @@ public sealed class Peer : IAsyncDisposable
         finally { _writeLock.Release(); }
     }
 
-    /// <summary>Send a 4-byte length zero keep-alive message.</summary>
+    
     public async Task SendKeepAliveAsync(CancellationToken ct = default)
     {
         if (_stream is null) throw new InvalidOperationException("Not connected.");
-        var header = new byte[4]; // zero length
+        var header = new byte[4]; 
         await _writeLock.WaitAsync(ct).ConfigureAwait(false);
         try { await _stream.WriteAsync(header, ct).ConfigureAwait(false); }
         finally { _writeLock.Release(); }
     }
 
-    /// <summary>Read one protocol message from the network. Returns null on keep-alive.</summary>
+    
     public async Task<PeerMessage?> ReadMessageAsync(CancellationToken ct = default)
     {
         if (_stream is null) throw new InvalidOperationException("Not connected.");
 
-        // 1) Length prefix
+        
         var lengthBuf = new byte[4];
         await ReadExactlyAsync(_stream, lengthBuf, 0, 4, ct).ConfigureAwait(false);
         int length = BinaryPrimitives.ReadInt32BigEndian(lengthBuf);
 
-        // 2) Length 0 means KeepAlive — return null to signal "no payload".
+        
         if (length == 0) return null;
 
-        // 3) ID + payload
+        
         var idBuf = new byte[1];
         await ReadExactlyAsync(_stream, idBuf, 0, 1, ct).ConfigureAwait(false);
         var id = (PeerMessageId)idBuf[0];
 
-        // Body is `length - 1` bytes long (the id itself is excluded).
+        
         int bodyLen = length - 1;
         var body = new byte[bodyLen];
         if (bodyLen > 0)
             await ReadExactlyAsync(_stream, body, 0, bodyLen, ct).ConfigureAwait(false);
 
-        // 4) Update local bitfield if applicable.
+        
         return new PeerMessage(id, body);
     }
 
-    /// <summary>Dispatch a single incoming message into the local state variables.</summary>
+    
     public void Handle(PeerMessage msg)
     {
         switch (msg.Id)
         {
             case PeerMessageId.Choke:
-                IsChokedRemote = true;          // We got Choked.
+                IsChokedRemote = true;          
                 break;
             case PeerMessageId.Unchoke:
-                IsChokedRemote = false;         // We got Unchoked.
+                IsChokedRemote = false;         
                 break;
             case PeerMessageId.Interested:
-                IsInterestedRemote = true;      // Remote wants our pieces.
+                IsInterestedRemote = true;      
                 break;
             case PeerMessageId.NotInterested:
                 IsInterestedRemote = false;
@@ -282,16 +253,16 @@ public sealed class Peer : IAsyncDisposable
                         RemoteBitfield[i] = true;
                 }
                 break;
-            // Have / Request / Piece / Cancel updates are not state-machine
-            // relevant here; the orchestrator polls those on demand.
+            
+            
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Convenience skeletons for every message type a v1 client might send.
-    // They keep the call sites readable; underlying work is delegated to
-    // SendMessageAsync above.
-    // -------------------------------------------------------------------------
+    
+    
+    
+    
+    
 
     public Task SendChokeAsync(CancellationToken ct = default)
     {
@@ -317,7 +288,7 @@ public sealed class Peer : IAsyncDisposable
         return SendMessageAsync(PeerMessageId.NotInterested, null, ct);
     }
 
-    /// <summary>Send our local bitfield. Each bit tells the remote whether we have that piece.</summary>
+    
     public Task SendBitfieldAsync(bool[] havePieces, CancellationToken ct = default)
     {
         int byteCount = (havePieces.Length + 7) / 8;
@@ -328,7 +299,7 @@ public sealed class Peer : IAsyncDisposable
         return SendMessageAsync(PeerMessageId.Bitfield, payload, ct);
     }
 
-    /// <summary>Send a "Have" announcement for one piece.</summary>
+    
     public Task SendHaveAsync(int pieceIndex, CancellationToken ct = default)
     {
         var payload = new byte[4];
@@ -336,7 +307,7 @@ public sealed class Peer : IAsyncDisposable
         return SendMessageAsync(PeerMessageId.Have, payload, ct);
     }
 
-    /// <summary>Send a request for a 16 KiB block.</summary>
+    
     public Task SendRequestAsync(int pieceIndex, int offset, int length, CancellationToken ct = default)
     {
         var payload = new byte[12];
@@ -346,7 +317,7 @@ public sealed class Peer : IAsyncDisposable
         return SendMessageAsync(PeerMessageId.Request, payload, ct);
     }
 
-    /// <summary>Send a Piece response containing an indexed block.</summary>
+    
     public Task SendPieceAsync(int pieceIndex, int offset, byte[] block, CancellationToken ct = default)
     {
         var payload = new byte[8 + block.Length];
@@ -356,7 +327,7 @@ public sealed class Peer : IAsyncDisposable
         return SendMessageAsync(PeerMessageId.Piece, payload, ct);
     }
 
-    /// <summary>Cancel a previously-issued Request.</summary>
+    
     public Task SendCancelAsync(int pieceIndex, int offset, int length, CancellationToken ct = default)
     {
         var payload = new byte[12];
@@ -366,29 +337,29 @@ public sealed class Peer : IAsyncDisposable
         return SendMessageAsync(PeerMessageId.Cancel, payload, ct);
     }
 
-    // -------------------------------------------------------------------------
-    // Internal helpers
-    // -------------------------------------------------------------------------
+    
+    
+    
 
-    /// <summary>Allocate the 68-byte handshake buffer.</summary>
+    
     private static byte[] BuildHandshakeBytes(byte[] peerId, byte[] infoHash)
     {
         var buf = new byte[HandshakeLength];
-        // 1) Protocol identifier (20 bytes).
+        
         Buffer.BlockCopy(ProtocolIdentifier, 0, buf, 0, ProtocolIdentifier.Length);
-        // 2) 8 reserved bytes (already zero from `new byte[]`).
-        // 3) infohash at offset 28.
+        
+        
         Buffer.BlockCopy(infoHash, 0, buf, 28, 20);
-        // 4) peer-id at offset 48.
+        
         Buffer.BlockCopy(peerId, 0, buf, 48, 20);
         return buf;
     }
 
-    /// <summary>
-    /// Read EXACTLY <paramref name="count"/> bytes — never less. Recovers from
-    /// short reads because NetworkStream itself does not guarantee a single
-    /// ReadAsync call returns the full requested amount.
-    /// </summary>
+    
+    
+    
+    
+    
     private static async Task ReadExactlyAsync(NetworkStream stream, byte[] buf, int offset, int count,
                                                 CancellationToken ct)
     {
@@ -409,7 +380,8 @@ public sealed class Peer : IAsyncDisposable
             _client.Dispose();
             _writeLock.Dispose();
         }
-        catch { /* best effort */ }
+        catch {  }
         await Task.CompletedTask;
     }
 }
+

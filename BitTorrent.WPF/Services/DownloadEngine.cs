@@ -1,4 +1,4 @@
-using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography;
@@ -32,7 +32,7 @@ public sealed class DownloadEngine
                 ? Path.GetDirectoryName(torrentVm.TorrentInfo.Files.First().RelativePath) ?? ""
                 : Path.Combine(torrentVm.TorrentInfo.Name));
 
-        // For simplicity, we use the download path directly
+        
         var storePath = Path.GetDirectoryName(torrentVm.TorrentInfo.Files.First().RelativePath) ?? "";
         var fullStorePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "BitTorrent");
 
@@ -42,7 +42,7 @@ public sealed class DownloadEngine
         Log($"InfoHash: {torrentVm.TorrentInfo.InfoHashHex}");
         Log($"Announce URL: {torrentVm.TorrentInfo.AnnounceUrl}");
 
-        // Get peers from tracker
+        
         var peers = await GetPeersAsync(torrent, ct);
         if (peers.Count == 0)
         {
@@ -54,7 +54,7 @@ public sealed class DownloadEngine
         torrentVm.Status = $"Found {peers.Count} peers. Connecting...";
         Log($"Got {peers.Count} peers from trackers");
 
-        // Start peer connections and download
+        
         var semaphore = new SemaphoreSlim(Environment.ProcessorCount * 2);
         var tasks = new List<Task>();
 
@@ -80,7 +80,7 @@ public sealed class DownloadEngine
         
         if (!ct.IsCancellationRequested)
         {
-            // Verify all pieces
+            
             torrentVm.Status = "Verifying...";
             for (int i = 0; i < torrentVm.TorrentInfo.PieceCount; i++)
             {
@@ -103,10 +103,10 @@ public sealed class DownloadEngine
             return peers;
         }
 
-        // Collect all announce URLs (primary + announce-list if present)
+        
         var announceUrls = new List<Uri> { torrent.AnnounceUrl };
         
-        // Note: The Core library doesn't expose announce-list yet, so we only use primary
+        
 
         foreach (var url in announceUrls)
         {
@@ -182,12 +182,12 @@ public sealed class DownloadEngine
             peerVm.IsConnected = true;
             torrentVm.UpdatePeer(peerVm);
 
-            // Send interested
+            
             await peer.SendInterestedAsync(ct);
             peerVm.IsInterested = true;
             Log($"Sent Interested to: {endpoint}");
 
-            // Wait for unchoke
+            
             var unchoked = await WaitForUnchokeAsync(peer, ct);
             if (!unchoked)
             {
@@ -200,7 +200,7 @@ public sealed class DownloadEngine
             peerVm.IsChoked = false;
             Log($"Peer {endpoint} unchoked us");
 
-            // Download pieces
+            
             await DownloadPiecesAsync(peer, torrent, fileStore, torrentVm, peerVm, ct);
         }
         catch (Exception ex)
@@ -247,7 +247,7 @@ public sealed class DownloadEngine
 
         while (!ct.IsCancellationRequested)
         {
-            // Find a piece we need
+            
             var neededPieces = torrentVm.Pieces
                 .Where(p => !p.IsComplete && !p.IsDownloading)
                 .ToList();
@@ -266,7 +266,7 @@ public sealed class DownloadEngine
                 await DownloadPieceAsync(peer, torrent, fileStore, torrentVm, piece, peerVm, ct);
                 piece.IsDownloading = false;
                 
-                // Verify
+                
                 if (await fileStore.VerifyAsync(piece.Index))
                 {
                     piece.IsVerified = true;
@@ -304,18 +304,18 @@ public sealed class DownloadEngine
             var request = new BlockRequest(piece.Index, blockOffset, currentBlockSize);
             var buffer = fileStore.AllocateBlockBuffer(request);
 
-            // Request block
+            
             await peer.SendRequestAsync(piece.Index, blockOffset, currentBlockSize, ct);
 
-            // Read response
+            
             var msg = await peer.ReadMessageAsync(ct);
             if (msg == null || msg.Id != PeerMessageId.Piece)
             {
-                blockOffset -= blockSize; // Retry
+                blockOffset -= blockSize; 
                 continue;
             }
 
-            // Parse piece message: index (4), begin (4), block
+            
             if (msg.Data.Length < 8 + currentBlockSize) continue;
 
             int receivedIndex = BinaryPrimitives.ReadInt32BigEndian(msg.Data);
@@ -326,14 +326,14 @@ public sealed class DownloadEngine
             var blockData = msg.Data.AsSpan(8, currentBlockSize);
             blockData.CopyTo(buffer);
 
-            // Write to disk
+            
             await fileStore.WriteBlockAsync(request, buffer, ct);
             
             piece.BlocksReceived++;
             torrentVm.UpdateProgress(piece.Index, piece.BlocksReceived);
             
-            // Update speed
-            peerVm.DownloadSpeed = currentBlockSize / 1024.0; // KB/s rough
+            
+            peerVm.DownloadSpeed = currentBlockSize / 1024.0; 
         }
     }
 

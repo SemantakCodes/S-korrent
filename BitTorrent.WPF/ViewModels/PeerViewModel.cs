@@ -1,4 +1,4 @@
-using BitTorrent.WPF.ViewModels;
+﻿using BitTorrent.WPF.ViewModels;
 
 namespace BitTorrent.WPF.ViewModels;
 

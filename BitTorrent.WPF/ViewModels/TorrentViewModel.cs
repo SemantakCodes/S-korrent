@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
 using BitTorrent.Core;
@@ -83,7 +83,7 @@ public sealed class TorrentViewModel : ViewModelBase
         _engine = engine;
         TorrentInfo = new TorrentInfo(torrent);
 
-        // Initialize pieces
+        
         for (int i = 0; i < TorrentInfo.PieceCount; i++)
         {
             Pieces.Add(new PieceViewModel(this, i, TorrentInfo.PieceLength, 16384));
@@ -92,7 +92,7 @@ public sealed class TorrentViewModel : ViewModelBase
         PauseCommand = new RelayCommand(_ => Stop(), _ => IsDownloading);
         ResumeCommand = new RelayCommand(async _ => await StartAsync(), _ => !IsDownloading);
         StopCommand = new RelayCommand(_ => Stop(), _ => IsDownloading);
-        RemoveCommand = new RelayCommand(_ => { /* handled by parent */ });
+        RemoveCommand = new RelayCommand(_ => {  });
     }
 
     public async Task StartAsync()
@@ -135,7 +135,7 @@ public sealed class TorrentViewModel : ViewModelBase
             piece.BlocksReceived = blocksReceived;
             piece.IsVerified = isVerified;
             
-            // Update overall progress
+            
             int totalBlocks = Pieces.Sum(p => p.BlocksTotal);
             int receivedBlocks = Pieces.Sum(p => p.BlocksReceived);
             OverallProgress = totalBlocks > 0 ? (double)receivedBlocks / totalBlocks * 100 : 0;
