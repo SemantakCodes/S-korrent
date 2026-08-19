@@ -52,7 +52,7 @@ namespace BitTorrent.WPF {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/BitTorrent.WPF;component/app.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Skorrent;component/app.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\App.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

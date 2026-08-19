@@ -2,20 +2,20 @@
   "version": 4,
   "targets": {
     "net10.0-windows": {
-      "BitTorrent.Core/1.0.0": {
+      "Skorrent.Core/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "compile": {
-          "bin/placeholder/BitTorrent.Core.dll": {}
+          "bin/placeholder/Skorrent.Core.dll": {}
         },
         "runtime": {
-          "bin/placeholder/BitTorrent.Core.dll": {}
+          "bin/placeholder/Skorrent.Core.dll": {}
         }
       }
     }
   },
   "libraries": {
-    "BitTorrent.Core/1.0.0": {
+    "Skorrent.Core/1.0.0": {
       "type": "project",
       "path": "../BitTorrent.Core/BitTorrent.Core.csproj",
       "msbuildProject": "../BitTorrent.Core/BitTorrent.Core.csproj"
@@ -23,7 +23,7 @@
   },
   "projectFileDependencyGroups": {
     "net10.0-windows": [
-      "BitTorrent.Core >= 1.0.0"
+      "Skorrent.Core >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -33,7 +33,7 @@
     "version": "1.0.0",
     "restore": {
       "projectUniqueName": "D:\\External Projects\\code-control\\BitTorrent.WPF\\BitTorrent.WPF.csproj",
-      "projectName": "BitTorrent.WPF",
+      "projectName": "Skorrent",
       "projectPath": "D:\\External Projects\\code-control\\BitTorrent.WPF\\BitTorrent.WPF.csproj",
       "packagesPath": "C:\\Users\\user\\.nuget\\packages\\",
       "outputPath": "D:\\External Projects\\code-control\\BitTorrent.WPF\\obj\\",

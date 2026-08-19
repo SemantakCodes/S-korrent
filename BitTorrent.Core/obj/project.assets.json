@@ -14,7 +14,7 @@
     "version": "1.0.0",
     "restore": {
       "projectUniqueName": "D:\\External Projects\\code-control\\BitTorrent.Core\\BitTorrent.Core.csproj",
-      "projectName": "BitTorrent.Core",
+      "projectName": "Skorrent.Core",
       "projectPath": "D:\\External Projects\\code-control\\BitTorrent.Core\\BitTorrent.Core.csproj",
       "packagesPath": "C:\\Users\\user\\.nuget\\packages\\",
       "outputPath": "D:\\External Projects\\code-control\\BitTorrent.Core\\obj\\",

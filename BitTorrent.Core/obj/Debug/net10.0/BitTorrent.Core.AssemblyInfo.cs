@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Skorrent.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0a753d0afe6b697f8f5832018002e75833dad13f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4e8197d28bf8dd032f1214f47c46d0d689c44211")]
 [assembly: System.Reflection.AssemblyProductAttribute("Skorrent.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Skorrent.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

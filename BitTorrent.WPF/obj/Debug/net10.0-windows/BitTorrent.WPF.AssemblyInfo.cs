@@ -10,12 +10,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("BitTorrent.WPF")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("Skorrent")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+37d38552507ad80b3936f15dff901cf3c3724ed7")]
-[assembly: System.Reflection.AssemblyProductAttribute("BitTorrent.WPF")]
-[assembly: System.Reflection.AssemblyTitleAttribute("BitTorrent.WPF")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4e8197d28bf8dd032f1214f47c46d0d689c44211")]
+[assembly: System.Reflection.AssemblyProductAttribute("Skorrent")]
+[assembly: System.Reflection.AssemblyTitleAttribute("Skorrent")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 [assembly: System.Runtime.Versioning.TargetPlatformAttribute("Windows7.0")]
 [assembly: System.Runtime.Versioning.SupportedOSPlatformAttribute("Windows7.0")]
